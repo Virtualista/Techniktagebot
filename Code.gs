@@ -1,17 +1,31 @@
 
 function parseDate(title) {
 
-  // 21. März 2017
-  var dateRegex1 = new RegExp(/([0-9]?[0-9])\. ([\wä]+) ([0-9]{4})/);
+  // 2017-03-21
+  var dateRegex1 = new RegExp(/([0-9]{4})-([0-9]?[0-9])-([0-9]?[0-9])/);
   var m = dateRegex1.exec(title);
-  
+
   if (m != null) {
     
     var s = "Match 1 at position " + m.index + ":\n";
     for (j = 0; j < m.length; j++) {
       s = s + m[j] + " -- ";
     }
+    Logger.log(s + "\n");
 
+    return m[0];
+  }
+
+  // 21. März 2017
+  var dateRegex2 = new RegExp(/([0-9]?[0-9])\. ([\wä]+) ([0-9]{4})/);
+  m = dateRegex2.exec(title);
+  
+  if (m != null) {
+    
+    var s = "Match 2 at position " + m.index + ":\n";
+    for (j = 0; j < m.length; j++) {
+      s = s + m[j] + " -- ";
+    }
     Logger.log(s + "\n");
     
     m[2] = m[2].replace(/Januar/ig, "01");
@@ -32,9 +46,20 @@ function parseDate(title) {
     return m[3] + '-' + m[2] + '-' + m[1]; 
   }
   
-  var dateRegex2 = new RegExp(/([0-9]?[0-9])\.([0-9]?[0-9])\.([0-9]{4})/);
-  
-  var dateRegex3 = new RegExp(/([0-9]{4})-([0-9]?[0-9])-([0-9]?[0-9])/);
+  // 21.03.2017
+  var dateRegex3 = new RegExp(/([0-9]?[0-9])\.([0-9]?[0-9])\.([0-9]{4})/);
+  m = dateRegex3.exec(title);
+
+  if (m != null) {
+    
+    s = "Match 3 at position " + m.index + ":\n";
+    for (j = 0; j < m.length; j++) {
+      s = s + m[j] + " -- ";
+    }
+    Logger.log(s + "\n");
+
+    return m[3] + '-' + m[2] + '-' + m[1]; 
+  }
 
   return 'No Match';
 }
