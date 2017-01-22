@@ -1,0 +1,8 @@
+2017-01-22
+
+Implement the regexes for plain text date formats. As a proof of concept, use these to sort
+posts into three separate piles:
+- Posts without a date referring to one specific day.
+- Posts with a definite date, where plain text date and posting date match.
+- Posts with a definite date, where plain text date and posting date don't match.
+
