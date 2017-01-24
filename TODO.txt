@@ -1,3 +1,8 @@
+2017-01-24
+
+Truncate tweets to 140 characters (possibly at word boundaries)
+Add each tweeted post to a master spreadsheet for later refinement. I.e. for trying to avoid duplicate tweets.
+
 2017-01-22
 
 Implement the regexes for plain text date formats. As a proof of concept, use these to sort
