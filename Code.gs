@@ -6,6 +6,7 @@ var dateRegex2 = new RegExp(/([0-9]?[0-9])\. ([\wä]+) ([0-9]{4})/);
 // 21.03.2017
 var dateRegex3 = new RegExp(/([0-9]?[0-9])\.([0-9]?[0-9])\.([0-9]{4})/);
 
+var headlineRegex = new RegExp(/<h2>(.*)<\/h2>/);
 
 function parseDate(title) {
   var m = dateRegex1.exec(title);
@@ -59,8 +60,8 @@ function pullPostsFromTumblr() {
   // Create a new Google Doc named after blog and #posts
   // var doc = DocumentApp.create('Techniktagebuch');
 
-  var sheet = SpreadsheetApp.create('Techniktagebot', 5000, 6); 
-  sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL']);
+  var sheet = SpreadsheetApp.create('Techniktagebot', 5000, 7); 
+  sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
 
   var date = new Date();
   var now = date.toDateString();
@@ -74,12 +75,14 @@ function pullPostsFromTumblr() {
   if (day < 10) { day = '0' + day };
   Logger.log('Current: ' + year + '-' + month + '-' + day);
     
-  var currentDateRegex = new RegExp('-' + month + '-' + day);
+  var currentDateRegex = new RegExp('\([0-9]\{4\}\)\(-' + month + '-' + day + '\)');
 
   var numPosts = 50;
   var offset = 0;
   var increment = 50;
-  // var par = '';
+  var par = '';
+  var matches = [];
+  var intros = [];
 
   do {
 
@@ -106,16 +109,34 @@ function pullPostsFromTumblr() {
       
       var match = currentDateRegex.exec(parsed);
       if (match != null) {
+      
+        matches.push(post);
+        
         Logger.log('*** Match! ***');
         Logger.log('Post ' + (offset + i) + ':' + post.title);
         Logger.log(parsed);
         
-        // par += 'Post ' + (offset + i) + ':\n';
-        // par += post.title + ' - ' + post.short_url + '\n';
-        // par += parsed + '\n\n';
+        var years = year - match[1];
+        var intro = 'Heute vor ';
+        if (years == 1) {        
+          intro += 'einem Jahr: ';
+        } else {
+          intro += years + ' Jahren: ';
+        }
+        
+        var headline = headlineRegex.exec(post.body);
+        if (headline != null) {
+          intro += headline[1];
+        }
+        intros.push(intro);
+        
+        par += intro + '\n';
+        par += 'Post ' + (offset + i) + ':\n';
+        par += post.title + ' - ' + post.short_url + '\n';
+        par += parsed + '\n\n';
 
-        // sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL']);
-        sheet.appendRow([offset + i, parsed, post.title, post.slug, post.date, post.short_url]);
+        // sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
+        sheet.appendRow([offset + i, parsed, post.title, post.slug, post.date, post.short_url, intro, (intro + post.short_url).length]);
       }
     }
     
@@ -124,6 +145,10 @@ function pullPostsFromTumblr() {
   }
   while (offset < data.response.blog.total_posts);
   
+  var rand = Math.floor(Math.random() * matches.length);
+  sheet.appendRow(['']);
+  sheet.appendRow([rand, intros[rand], matches[rand].title, matches[rand].short_url, (intros[rand] + matches[rand].short_url).length]);
+
   // Access the body of the document, then add a paragraph.
   // doc.getBody().appendParagraph(par);
   // doc.setName(now + ' ' + data.response.blog.title + ' ' + data.response.blog.total_posts);
