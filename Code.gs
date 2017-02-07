@@ -15,25 +15,6 @@ var monthStrings = [ "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
 var headlineRegex = new RegExp(/<h2>(.*)<\/h2>/);
 var htmlRegExp = new RegExp(/&.*;/);
 
-// This function replaces HTML codes for special characters, which may occur in post titles,
-// with their literal equivalents, e.g. &euro; => €
-function decodeHTML(special) {
-  var map = {"amp":"&", "hellip":"…",
-             "lsquo":"‘", "rsquo":"’", "ldquo":"“", "rdquo":"”",
-             "quot":"\"", "lanquo":"«", "ranquo":"»",
-             "frac14":"¼", "frac12":"½", "frac34":"¾",
-             "sup2":"²", "sup3":"³",
-             "copy":"©", "euro":"€",
-             "gt":">", "lt":"<"
-            };
-    return special.replace(/&(#(?:x[0-9a-f]+|\d+)|[a-z1-4]+);?/gi, function($0, $1) {
-        if ($1[0] === "#") {
-            return String.fromCharCode($1[1].toLowerCase() === "x" ? parseInt($1.substr(2), 16)  : parseInt($1.substr(1), 10));
-        } else {
-            return map.hasOwnProperty($1) ? map[$1] : $0;
-        }
-    });
-}
 
 // Parse date strings and return their ISO format equivalent strings,
 // e.g. '21. Januar 2015' => '2015_01-21'
@@ -84,124 +65,167 @@ function parseDate(title) {
 // formats it as a tweet and posts that via the Twitter API.
 function pullPostsFromTumblr() {
   
-  // Create a new Google Doc named after blog and #posts
-  // var doc = DocumentApp.create('Techniktagebuch');
-
-  var sheet = SpreadsheetApp.create('Techniktagebot', 50, 8); 
-  sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
-
-  var logSheet = SpreadsheetApp.openByUrl('https://docs.google.com/spreadsheets/d/1n95N2V93A8hWMt-1-ulpRLcz33iKFn2MjD7UBC8UmPw/edit#gid=0');
-  
-  var date = new Date();
-  var now = date.toDateString();
-  Logger.log(now);
+  try {
     
-  var year = date.getFullYear();
-  var month = date.getMonth() + 1;  
-  var day = date.getDate();
+    var date = new Date();
+    var now = date.toDateString();
+    Logger.log(now);
 
-  if (month < 10) { month = '0' + month };
-  if (day < 10) { day = '0' + day };
-  Logger.log('Current: ' + year + '-' + month + '-' + day);
+    // Also use MailApp to get email notifications of errors.
+    MailApp.sendEmail('virtualista67@gmail.com', 'Started pullPostsFromTumblr ' + now, '');
     
-  var currentDateRegex = new RegExp('\([0-9]\{4\}\)\(-' + month + '-' + day + '\)');
-
-  var numPosts = 50;
-  var offset = 0;
-  var increment = 50;
-  var par = '';
-  var matches = [];
-  var intros = [];
-
-  do {
-
-    var url = 'https://api.tumblr.com/v2/blog/techniktagebuch.tumblr.com/posts/text?api_key=...' + 
-      '&limit=' + numPosts +
-      '&offset=' + offset;
-    var response = UrlFetchApp.fetch(url);
-   
-    var data = JSON.parse(response);
+    var year = date.getFullYear();
+    var month = date.getMonth() + 1;  
+    var day = date.getDate();
     
-    Logger.log(data.meta);
-    Logger.log(data.response.blog.title);
-    Logger.log(data.response.blog.total_posts);
+    if (month < 10) { month = '0' + month };
+    if (day < 10) { day = '0' + day };
+    var queryDateString = year + '-' + month + '-' + day;
+    Logger.log('Current: ' + queryDateString);
     
-    var i = 0;
-    for (i=0; i<numPosts; i++) {
+    var sheet = SpreadsheetApp.create('Techniktagebot-' + queryDateString, 50, 8); 
+    sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
+    
+    var logSheet = SpreadsheetApp.openByUrl('https://docs.google.com/spreadsheets/d/1n95N2V93A8hWMt-1-ulpRLcz33iKFn2MjD7UBC8UmPw/edit#gid=0');
+    
+    var currentDateRegex = new RegExp('\([0-9]\{4\}\)\(-' + month + '-' + day + '\)');
+    
+    var numPosts = 50;
+    var offset = 0;
+    var increment = 50;
+    var par = '';
+    var matches = [];
+    var intros = [];
+    
+    do {
       
-      var post = data.response.posts[i];
-      if (post === undefined) {
-        break;
+      var url = 'https://api.tumblr.com/v2/blog/techniktagebuch.tumblr.com/posts/text?api_key=' + 
+        '&limit=' + numPosts +
+          '&offset=' + offset;
+      
+      try {
+        var response = UrlFetchApp.fetch(url);
+        var data = JSON.parse(response);
+      } catch (x) {
+        // Also use MailApp to get email notifications of errors.
+        MailApp.sendEmail('virtualista67@gmail.com', 'Error: fetch+parse', x.toString());
+        Logger.log("Error fetch+parse: " + x.toString());            
       }
       
-      var parsed = parseDate(post.title);
+      Logger.log(data.meta);
+      Logger.log(data.response.blog.title);
+      Logger.log(data.response.blog.total_posts);
       
-      var match = currentDateRegex.exec(parsed);
-      if (match != null) {
-      
-        matches.push(post);
+      var i = 0;
+      for (i=0; i<numPosts; i++) {
         
-        Logger.log('*** Match! ***');
-        Logger.log('Post ' + (offset + i) + ':' + post.title);
-        Logger.log(parsed);
+        var post = data.response.posts[i];
+        if (post === undefined) {
+          break;
+        }
         
-        var years = year - match[1];
-        var intro = 'Heute vor ';
-        if (years == 0) {        
-          continue;             // Don't post entries referring to the present day!
-        } else if (years == 1) {        
-          if (Math.random() < 0.05) {
-            intro += '1 Jahr: ';
+        var parsed = parseDate(post.title);
+        
+        // Try to get 'April 2016' posts, too, if their post.date matches the current date.
+        // In that case, the post.date is parsed.
+        if (parsed == 'No Match') {
+          var parsedMonth = parseMonthDate(post.title);
+          
+          if (parsedMonth != null)
+          {
+            var parsedString = parsedMonth[2] + '-' + parsedMonth[1];
+            var parsedPostDate = parseDate(post.date);
+            if (parsedPostDate.substr(0, 7) == parsedString)
+            {
+              parsed = parsedPostDate;
+            }
+          }      
+        }
+
+        // Now check for a match with the current date.
+        var match = currentDateRegex.exec(parsed);
+        if (match != null) {
+          
+          matches.push(post);
+          
+          Logger.log('*** Match! ***');
+          Logger.log('Post ' + (offset + i) + ':' + post.title);
+          Logger.log(parsed);
+          
+          var years = year - match[1];
+          var intro = 'Heute vor ';
+          if (years == 0) {        
+            continue;             // Don't post entries referring to the present day!
+          } else if (years == 1) {        
+            if (Math.random() < 0.05) {
+              intro += '1 Jahr: ';
+            } else {
+              intro += 'einem Jahr: ';
+            }
           } else {
-            intro += 'einem Jahr: ';
+            intro += years + ' Jahren: ';
           }
-        } else {
-          intro += years + ' Jahren: ';
+          
+          var headline = headlineRegex.exec(post.body);
+          if (headline != null)
+          {
+            var special = htmlRegExp.exec(headline[1]);
+            if (special != null)
+            { 
+              headline[1] = decodeHTML(headline[1]);
+            } 
+            headline[1] = headline[1].replace('<br/>', '');
+            intro += headline[1].trim();
+          }
+          intros.push(intro);
+          
+          par += intro + '\n';
+          par += 'Post ' + (offset + i) + ':\n';
+          par += post.title + ' - ' + post.short_url + '\n';
+          par += parsed + '\n\n';
+          
+          // sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
+          sheet.appendRow([offset + i, parsed, post.title, post.slug, post.date, post.short_url, intro, (intro + post.short_url).length + 1]);
         }
-        
-        var headline = headlineRegex.exec(post.body);
-        if (headline != null)
-        {
-          var special = htmlRegExp.exec(headline[1]);
-          if (special != null)
-          { 
-            headline[1] = decodeHTML(headline[1]);
-          } 
-          intro += headline[1].trim();
-        }
-        intros.push(intro);
-        
-        par += intro + '\n';
-        par += 'Post ' + (offset + i) + ':\n';
-        par += post.title + ' - ' + post.short_url + '\n';
-        par += parsed + '\n\n';
-
-        // sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
-        sheet.appendRow([offset + i, parsed, post.title, post.slug, post.date, post.short_url, intro, (intro + post.short_url).length + 1]);
       }
+      
+      offset += increment;
+      Logger.log('Offset: ' + offset);
     }
+    while (offset < data.response.blog.total_posts);
     
-    offset += increment;
-    Logger.log('Offset: ' + offset);
-  }
-  while (offset < data.response.blog.total_posts);
-  
-  if (matches.length > 0) {
-    var rand = Math.floor(Math.random() * matches.length);
-    var mx = matches[rand];
-    var origLength = (intros[rand] + mx.short_url).length + 1;
-  
-    sheet.appendRow(['']);
-    sheet.appendRow([rand, intros[rand], mx.title, mx.short_url, origLength]);
-  
-    if (origLength > 140) {
-      intros[rand] = intros[rand].substring(0, 140 - mx.short_url.length - 4);
-      intros[rand] += '...';
+    if (matches.length > 0) {
+      var rand = Math.floor(Math.random() * matches.length);
+      var mx = matches[rand];
+      var origLength = (intros[rand] + mx.short_url).length + 1;
+      
+      sheet.appendRow(['']);
+      sheet.appendRow([rand, intros[rand], mx.title, mx.short_url, origLength]);
+      
+      if (origLength > 140) {
+        intros[rand] = intros[rand].substring(0, 140 - mx.short_url.length - 4);
+        intros[rand] += '...';
+      }
+      
+      var tweet = intros[rand] + ' ' + mx.short_url;
+      
+      logSheet.appendRow([date, mx.date, mx.title, mx.short_url, origLength, tweet, tweet.length, matches.length, data.response.blog.total_posts]);
+      publishTweet(tweet);
+      
+    } else {
+      
+      logSheet.appendRow([date, mx.date, '', '', 0, '', 0, matches.length, data.response.blog.total_posts]);
     }
-    
-    var tweet = intros[rand] + ' ' + mx.short_url;
-    
-    publishTweet(tweet);
-    logSheet.appendRow([date, mx.date, mx.title, mx.short_url, origLength, tweet, tweet.length, matches.length, data.response.blog.total_posts]);
+  } catch (g)
+  {
+    // Also use MailApp to get email notifications of errors.
+    MailApp.sendEmail('virtualista67@gmail.com', 'Error: pullPostsFromTumblr', g.toString());     
+    Logger.log("Error (pullPostsFromTumblr): " + g.toString());    
   }
+  
+  moveFileToFolder(sheet, 'Logs');
+
+  date = new Date();
+  now = date.toDateString();
+  Logger.log('Finished: ' + date);
 }
