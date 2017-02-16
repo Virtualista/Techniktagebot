@@ -93,13 +93,13 @@ function pullPostsFromTumblr() {
     var numPosts = 50;
     var offset = 0;
     var increment = 50;
-    var par = '';
     var matches = [];
     var intros = [];
     
+    // Obtain 50 posts per loop iteration from Tumblr.
     do {
       
-      var url = 'https://api.tumblr.com/v2/blog/techniktagebuch.tumblr.com/posts/text?api_key=' + 
+      var url = 'https://api.tumblr.com/v2/blog/techniktagebuch.tumblr.com/posts/text?api_key=AqnjvP9btvvGKtQ4mFP5bmsgrQkLpZaFwhP5UY3ywaI4EODqSp' + 
         '&limit=' + numPosts +
           '&offset=' + offset;
       
@@ -116,6 +116,7 @@ function pullPostsFromTumblr() {
       Logger.log(data.response.blog.title);
       Logger.log(data.response.blog.total_posts);
       
+      // Parse the obtained posts.
       var i = 0;
       for (i=0; i<numPosts; i++) {
         
@@ -166,6 +167,7 @@ function pullPostsFromTumblr() {
             intro += years + ' Jahren: ';
           }
           
+          // Extract and format post headline
           var headline = headlineRegex.exec(post.body);
           if (headline != null)
           {
@@ -179,11 +181,6 @@ function pullPostsFromTumblr() {
           }
           intros.push(intro);
           
-          par += intro + '\n';
-          par += 'Post ' + (offset + i) + ':\n';
-          par += post.title + ' - ' + post.short_url + '\n';
-          par += parsed + '\n\n';
-          
           // sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
           sheet.appendRow([offset + i, parsed, post.title, post.slug, post.date, post.short_url, intro, (intro + post.short_url).length + 1]);
         }
@@ -194,6 +191,7 @@ function pullPostsFromTumblr() {
     }
     while (offset < data.response.blog.total_posts);
     
+    // Select one of the posts with matching dates and tweet it.
     if (matches.length > 0) {
       var rand = Math.floor(Math.random() * matches.length);
       var mx = matches[rand];
