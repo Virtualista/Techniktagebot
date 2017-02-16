@@ -1,13 +1,31 @@
 
+// Extract and format post headline
+function extractHeadline(post)
+{
+  var headline = headlineRegex.exec(post.body);
+  if (headline != null)
+  {
+    var special = htmlRegExp.exec(headline[1]);
+    if (special != null)
+    { 
+      headline[1] = decodeHTML(headline[1]);
+    } 
+    headline[1] = headline[1].replace('<br/>', '');
+    return headline[1].trim();
+  }
+  return '';
+}
+
+
 // This function replaces HTML codes for special characters, which may occur in post titles,
-// with their literal equivalents, e.g. &euro; => €
+// with their literal equivalents, e.g. &euro; => â‚¬
 function decodeHTML(special) {
-  var map = {"amp":"&", "hellip":"…",
-             "lsquo":"‘", "rsquo":"’", "ldquo":"“", "rdquo":"”",
-             "quot":"\"", "lanquo":"«", "ranquo":"»",
-             "frac14":"¼", "frac12":"½", "frac34":"¾",
-             "sup2":"²", "sup3":"³",
-             "copy":"©", "euro":"€",
+  var map = {"amp":"&", "hellip":"â€¦",
+             "lsquo":"â€˜", "rsquo":"â€™", "ldquo":"â€œ", "rdquo":"â€",
+             "quot":"\"", "lanquo":"Â«", "ranquo":"Â»",
+             "frac14":"Â¼", "frac12":"Â½", "frac34":"Â¾",
+             "sup2":"Â²", "sup3":"Â³",
+             "copy":"Â©", "euro":"â‚¬",
              "gt":">", "lt":"<"
             };
     return special.replace(/&(#(?:x[0-9a-f]+|\d+)|[a-z1-4]+);?/gi, function($0, $1) {
