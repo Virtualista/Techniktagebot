@@ -52,3 +52,4 @@ function moveFileToFolder(file, folderName)
     DriveApp.getRootFolder().removeFile(copyFile);
   }
 }
+
