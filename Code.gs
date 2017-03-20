@@ -155,3 +155,4 @@ function pullPostsFromTumblr() {
   now = date.toDateString();
   Logger.log('Finished: ' + date);
 }
+
