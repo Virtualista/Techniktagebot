@@ -1,65 +1,3 @@
-
-// 2017-03-21 or 2017-3-21
-var dateRegex1 = new RegExp(/([0-9]{4})-([0-9]?[0-9])-([0-9]?[0-9])/);
-// 21. März 2017 or 21.März 2017
-var dateRegex2 = new RegExp(/([0-9]?[0-9])\. ?([\wä]+) ([0-9]{4})/);
-// 21.03.2017 or 21. 03. 2017 (it seems we must catch weird whitespace here)
-var dateRegex3 = new RegExp(/([0-9]?[0-9])\.\s*([0-9]?[0-9])\.\s*([0-9]{4})/);
-
-var monthRegexes = [ new RegExp(/Januar|Jänner/i), new RegExp(/Februar/i), new RegExp(/März/i),
-                     new RegExp(/April/i), new RegExp(/Mai/i), new RegExp(/Juni/i),
-                     new RegExp(/Juli/i), new RegExp(/August/i), new RegExp(/September/i),
-                     new RegExp(/Oktober/i), new RegExp(/November/i), new RegExp(/Dezember/i) ];
-var monthStrings = [ "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12" ];
-
-var headlineRegex = new RegExp(/<h2>(.*)<\/h2>/);
-var htmlRegExp = new RegExp(/&.*;/);
-
-
-// Parse date strings and return their ISO format equivalent strings,
-// e.g. '21. Januar 2015' => '2015_01-21'
-function parseDate(title) {
-  var m = dateRegex1.exec(title);
-
-  if (m != null) {
-
-    if (m[1].length == 1) { m[1] = '0' + m[1] };
-    if (m[2].length == 1) { m[2] = '0' + m[2] };
-
-    return m[1] + '-' + m[2] + '-' + m[3]; 
-  }
-
-  m = dateRegex2.exec(title);
-  
-  if (m != null) {
-
-    if (m[1].length == 1) { m[1] = '0' + m[1] };
-    
-    var k;
-    for (k = 0; k < 12; k++) {
-      
-      if (monthRegexes[k].exec(m[2]) != null) {
-
-        return m[3] + '-' + monthStrings[k] + '-' + m[1]; 
-      }
-    }
-
-    return m[3] + '-' + m[2] + '-' + m[1]; 
-  }
-  
-  m = dateRegex3.exec(title);
-
-  if (m != null) {
-
-    if (m[2].length == 1) { m[2] = '0' + m[2] };
-    if (m[3].length == 1) { m[3] = '0' + m[3] };
-
-    return m[3] + '-' + m[2] + '-' + m[1]; 
-  }
-
-  return 'No Match';
-}
-
 // The actual main function, which pulls all posts from Tumblr, parses their dates from
 // the post titles, selects the ones matching the current date, randomly selects one,
 // formats it as a tweet and posts that via the Twitter API.
@@ -95,13 +33,14 @@ function pullPostsFromTumblr() {
     var increment = 50;
     var matches = [];
     var intros = [];
+    var ages = [];
     
     // Obtain 50 posts per loop iteration from Tumblr.
     do {
       
       var url = 'https://api.tumblr.com/v2/blog/techniktagebuch.tumblr.com/posts/text?api_key=AqnjvP9btvvGKtQ4mFP5bmsgrQkLpZaFwhP5UY3ywaI4EODqSp' + 
         '&limit=' + numPosts +
-          '&offset=' + offset;
+        '&offset=' + offset;
       
       try {
         var response = UrlFetchApp.fetch(url);
@@ -132,11 +71,10 @@ function pullPostsFromTumblr() {
         if (parsed == 'No Match') {
           var parsedMonth = parseMonthDate(post.title);
           
-          if (parsedMonth != null)
+          if (parsedMonth != 'No Match')
           {
-            var parsedString = parsedMonth[2] + '-' + parsedMonth[1];
             var parsedPostDate = parseDate(post.date);
-            if (parsedPostDate.substr(0, 7) == parsedString)
+            if (parsedPostDate.substr(0, 7) == parsedMonth)
             {
               parsed = parsedPostDate;
             }
@@ -146,8 +84,6 @@ function pullPostsFromTumblr() {
         // Now check for a match with the current date.
         var match = currentDateRegex.exec(parsed);
         if (match != null) {
-          
-          matches.push(post);
           
           Logger.log('*** Match! ***');
           Logger.log('Post ' + (offset + i) + ':' + post.title);
@@ -167,20 +103,11 @@ function pullPostsFromTumblr() {
             intro += years + ' Jahren: ';
           }
           
-          // Extract and format post headline
-          var headline = headlineRegex.exec(post.body);
-          if (headline != null)
-          {
-            var special = htmlRegExp.exec(headline[1]);
-            if (special != null)
-            { 
-              headline[1] = decodeHTML(headline[1]);
-            } 
-            headline[1] = headline[1].replace('<br/>', '');
-            intro += headline[1].trim();
-          }
+          matches.push(post);
+          intro += extractHeadline(post);
           intros.push(intro);
-          
+          ages.push(years);
+
           // sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
           sheet.appendRow([offset + i, parsed, post.title, post.slug, post.date, post.short_url, intro, (intro + post.short_url).length + 1]);
         }
@@ -193,17 +120,17 @@ function pullPostsFromTumblr() {
     
     // Select one of the posts with matching dates and tweet it.
     if (matches.length > 0) {
-      var rand = Math.floor(Math.random() * matches.length);
+      // var rand = Math.floor(Math.random() * matches.length);
+      var rand = selectWeightedMatch(matches, ages);
       var mx = matches[rand];
       var origLength = (intros[rand] + mx.short_url).length + 1;
-      
-      sheet.appendRow(['']);
-      sheet.appendRow([rand, intros[rand], mx.title, mx.short_url, origLength]);
       
       if (origLength > 140) {
         intros[rand] = intros[rand].substring(0, 140 - mx.short_url.length - 4);
         intros[rand] += '...';
       }
+      sheet.appendRow(['']);
+      sheet.appendRow([rand, intros[rand], mx.title, mx.short_url, origLength]);
       
       var tweet = intros[rand] + ' ' + mx.short_url;
       
@@ -214,7 +141,8 @@ function pullPostsFromTumblr() {
       
       logSheet.appendRow([date, mx.date, '', '', 0, '', 0, matches.length, data.response.blog.total_posts]);
     }
-  } catch (g)
+  }
+  catch (g)
   {
     // Also use MailApp to get email notifications of errors.
     MailApp.sendEmail('virtualista67@gmail.com', 'Error: pullPostsFromTumblr', g.toString());     
