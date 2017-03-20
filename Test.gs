@@ -2,7 +2,7 @@
 
 function testParseDates(line) {
 
-  var dateRegex1 = new RegExp(/([0-9]?[0-9])\. ([\w‰]+) ([0-9]{4})/);
+  var dateRegex1 = new RegExp(/([0-9]?[0-9])\. ([\w√§]+) ([0-9]{4})/);
   var m = dateRegex1.exec(line);
   
   var dateRegex2 = new RegExp(/([0-9]?[0-9])\.([0-9]?[0-9])\.([0-9]{4})/);
@@ -42,3 +42,4 @@ function testDateParsing() {
     testParseDates(text);
   }
 }
+
