@@ -1,3 +1,29 @@
+// Helper function for formatting tweets
+function formatTweet(rand, matches, intros, data) {
+
+  var match = matches[rand];
+  var intro = intros[rand];
+  
+  var origLength = (intro + match.short_url).length + 1;    
+  if (origLength > 140) {
+    intro = intro.substring(0, 140 - match.short_url.length - 4);
+    intro += '...';
+  }
+   
+  sheet.appendRow(['']);
+  sheet.appendRow([rand, intro, match.title, match.short_url, origLength]);
+      
+  var tweet = intro + ' ' + match.short_url;
+  
+  if (logSheet != null) {
+    logSheet.appendRow([date, match.date, match.title, match.short_url, origLength, tweet, tweet.length, matches.length, data.response.blog.total_posts]);
+  } else {
+    Logger.log([date, match.date, match.title, match.short_url, origLength, tweet, tweet.length, matches.length, data.response.blog.total_posts]);
+  }
+  return tweet;
+}
+
+
 // Helper function for sending tweets via the Twitter API
 function publishTweet(tweet) {
 

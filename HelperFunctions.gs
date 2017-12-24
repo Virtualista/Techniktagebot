@@ -1,3 +1,24 @@
+var currentDateRegex = null;
+var year = null;
+
+// Get the current date formatted as e.g. "2017-03-21" (ISO)
+function getCurrentDateString()
+{
+  var date = new Date();
+  var now = date.toDateString();
+  
+  year = date.getFullYear();
+  var month = date.getMonth() + 1;  
+  var day = date.getDate();
+  
+  if (month < 10) { month = '0' + month };
+  if (day < 10) { day = '0' + day };
+
+  currentDateRegex = new RegExp('\([0-9]\{4\}\)\(-' + month + '-' + day + '\)');
+  
+  return year + '-' + month + '-' + day;
+}
+
 
 // Extract and format post headline
 function extractHeadline(post)
@@ -52,4 +73,3 @@ function moveFileToFolder(file, folderName)
     DriveApp.getRootFolder().removeFile(copyFile);
   }
 }
-

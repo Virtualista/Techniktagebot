@@ -1,3 +1,7 @@
+var date = null;
+var sheet = null;
+var logSheet = null;
+
 // The actual main function, which pulls all posts from Tumblr, parses their dates from
 // the post titles, selects the ones matching the current date, randomly selects one,
 // formats it as a tweet and posts that via the Twitter API.
@@ -5,7 +9,7 @@ function pullPostsFromTumblr() {
   
   try {
     
-    var date = new Date();
+    date = new Date();
     var now = date.toDateString();
     Logger.log(now);
 
@@ -21,10 +25,10 @@ function pullPostsFromTumblr() {
     var queryDateString = year + '-' + month + '-' + day;
     Logger.log('Current: ' + queryDateString);
     
-    var sheet = SpreadsheetApp.create('Techniktagebot-' + queryDateString, 50, 8); 
+    sheet = SpreadsheetApp.create('Techniktagebot-' + queryDateString, 50, 8); 
     sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
     
-    var logSheet = SpreadsheetApp.openByUrl('https://docs.google.com/spreadsheets/d/1n95N2V93A8hWMt-1-ulpRLcz33iKFn2MjD7UBC8UmPw/edit#gid=0');
+    logSheet = SpreadsheetApp.openByUrl('https://docs.google.com/spreadsheets/d/1n95N2V93A8hWMt-1-ulpRLcz33iKFn2MjD7UBC8UmPw/edit#gid=0');
     
     var currentDateRegex = new RegExp('\([0-9]\{4\}\)\(-' + month + '-' + day + '\)');
     
@@ -120,26 +124,26 @@ function pullPostsFromTumblr() {
     
     // Select one of the posts with matching dates and tweet it.
     if (matches.length > 0) {
-      // var rand = Math.floor(Math.random() * matches.length);
+
       var rand = selectWeightedMatch(matches, ages);
-      var mx = matches[rand];
-      var origLength = (intros[rand] + mx.short_url).length + 1;
+      var tweet = formatTweet(rand, matches, intros, data);
       
-      if (origLength > 140) {
-        intros[rand] = intros[rand].substring(0, 140 - mx.short_url.length - 4);
-        intros[rand] += '...';
-      }
-      sheet.appendRow(['']);
-      sheet.appendRow([rand, intros[rand], mx.title, mx.short_url, origLength]);
-      
-      var tweet = intros[rand] + ' ' + mx.short_url;
-      
-      logSheet.appendRow([date, mx.date, mx.title, mx.short_url, origLength, tweet, tweet.length, matches.length, data.response.blog.total_posts]);
       publishTweet(tweet);
       
+      var rand2 = selectWeightedMatch(matches, ages);
+      if (matches.length >= 10 && rand2 != rand) {
+
+        tweet = formatTweet(rand2, matches, intros, data);
+        
+//        subject = 'TestCode ' + queryDateString + ' ' + data.response.blog.total_posts + ' Posts';
+//        MailApp.sendEmail('virtualista67@gmail.com', subject, tweet);
+        
+        var secondSheet = SpreadsheetApp.create(queryDateString); 
+        secondSheet.appendRow([tweet]);
+      }      
     } else {
       
-      logSheet.appendRow([date, mx.date, '', '', 0, '', 0, matches.length, data.response.blog.total_posts]);
+      logSheet.appendRow([date, '', '', '', 0, '', 0, matches.length, data.response.blog.total_posts]);
     }
   }
   catch (g)
@@ -155,4 +159,3 @@ function pullPostsFromTumblr() {
   now = date.toDateString();
   Logger.log('Finished: ' + date);
 }
-
