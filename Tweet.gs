@@ -32,10 +32,10 @@ function publishTweet(tweet) {
     var props = PropertiesService.getScriptProperties();
   
     props.setProperties({
-      TWITTER_CONSUMER_KEY: 'BZWDrb5HLaE0dqJw7QacmLmgN',
-      TWITTER_CONSUMER_SECRET: '43rwOIhurN00OmBr433cGj5QTLwjR6MDCIulAQxoAP8MM7CiSw',
-      TWITTER_ACCESS_TOKEN: '820395369414660096-z1DCjWQ5TgOnffLi4FlDYoKFuG0ghsA',
-      TWITTER_ACCESS_SECRET: '0tJDrqGrUnPOOaKDcF3KLdeUKSkFzRpgnVj4FIcz2CSP6',
+      TWITTER_CONSUMER_KEY: '',
+      TWITTER_CONSUMER_SECRET: '',
+      TWITTER_ACCESS_TOKEN: '',
+      TWITTER_ACCESS_SECRET: ''
       MAX_TWITTER_ID: 0
     });
 
