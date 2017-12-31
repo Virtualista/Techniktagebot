@@ -23,8 +23,8 @@ function parseDate(title) {
 
   if (m != null) {
 
-    if (m[1].length == 1) { m[1] = '0' + m[1] };
     if (m[2].length == 1) { m[2] = '0' + m[2] };
+    if (m[3].length == 1) { m[3] = '0' + m[3] };
 
     return m[1] + '-' + m[2] + '-' + m[3]; 
   }
@@ -50,8 +50,8 @@ function parseDate(title) {
 
   if (m != null) {
 
+    if (m[1].length == 1) { m[1] = '0' + m[1] };
     if (m[2].length == 1) { m[2] = '0' + m[2] };
-    if (m[3].length == 1) { m[3] = '0' + m[3] };
 
     return m[3] + '-' + m[2] + '-' + m[1]; 
   }
