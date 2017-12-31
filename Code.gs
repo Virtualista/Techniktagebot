@@ -29,9 +29,11 @@ function pullPostsFromTumblr() {
     sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
     
     logSheet = SpreadsheetApp.openByUrl('https://docs.google.com/spreadsheets/d/1n95N2V93A8hWMt-1-ulpRLcz33iKFn2MjD7UBC8UmPw/edit#gid=0');
-    
+
     var currentDateRegex = new RegExp('\([0-9]\{4\}\)\(-' + month + '-' + day + '\)');
-    
+        
+    var previousURLs = getPreviousPosts(currentDateRegex, logSheet);
+
     var numPosts = 50;
     var offset = 0;
     var increment = 50;
@@ -89,31 +91,40 @@ function pullPostsFromTumblr() {
         var match = currentDateRegex.exec(parsed);
         if (match != null) {
           
-          Logger.log('*** Match! ***');
-          Logger.log('Post ' + (offset + i) + ':' + post.title);
-          Logger.log(parsed);
+          // Check match against previous posts.
+          if (previousURLs.indexOf(post.short_url) != -1) {
+            
+            var subject = 'TestCode previous post from ' + queryDateString;
+            MailApp.sendEmail('virtualista67@gmail.com', subject, post.title + " "  + extractHeadline(post) + " " + post.short_url);
           
-          var years = year - match[1];
-          var intro = 'Heute vor ';
-          if (years == 0) {        
-            continue;             // Don't post entries referring to the present day!
-          } else if (years == 1) {        
-            if (Math.random() < 0.05) {
-              intro += '1 Jahr: ';
-            } else {
-              intro += 'einem Jahr: ';
-            }
           } else {
-            intro += years + ' Jahren: ';
-          }
           
-          matches.push(post);
-          intro += extractHeadline(post);
-          intros.push(intro);
-          ages.push(years);
-
-          // sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
-          sheet.appendRow([offset + i, parsed, post.title, post.slug, post.date, post.short_url, intro, (intro + post.short_url).length + 1]);
+            Logger.log('*** Match! ***');
+            Logger.log('Post ' + (offset + i) + ':' + post.title);
+            Logger.log(parsed);
+            
+            var years = year - match[1];
+            var intro = 'Heute vor ';
+            if (years == 0) {        
+              continue;             // Don't post entries referring to the present day!
+            } else if (years == 1) {        
+              if (Math.random() < 0.05) {
+                intro += '1 Jahr: ';
+              } else {
+                intro += 'einem Jahr: ';
+              }
+            } else {
+              intro += years + ' Jahren: ';
+            }
+            
+            matches.push(post);
+            intro += extractHeadline(post);
+            intros.push(intro);
+            ages.push(years);
+            
+            // sheet.appendRow(['#', 'Parsed', 'Title', 'Slug', 'Date', 'URL', 'Intro', 'Length']);
+            sheet.appendRow([offset + i, parsed, post.title, post.slug, post.date, post.short_url, intro, (intro + post.short_url).length + 1]);
+          }
         }
       }
       
