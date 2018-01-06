@@ -5,7 +5,7 @@ function selectWeightedMatch(matches, ages)
   var weightedSum = 0;
   
   for (var i=0; i<ages.length; i++) {
-    var sqrt = Math.sqrt(ages[i]);
+    var sqrt = Math.sqrt(Math.abs(ages[i]));
     weightedAges.push(sqrt);
     weightedSum += sqrt;
   }
