@@ -5,8 +5,8 @@ function formatTweet(rand, matches, intros, data) {
   var intro = intros[rand];
   
   var origLength = (intro + match.short_url).length + 1;    
-  if (origLength > 140) {
-    intro = intro.substring(0, 140 - match.short_url.length - 4);
+  if (origLength > 280) {
+    intro = intro.substring(0, 280 - match.short_url.length - 4);
     intro += '...';
   }
    
@@ -35,7 +35,7 @@ function publishTweet(tweet) {
       TWITTER_CONSUMER_KEY: '',
       TWITTER_CONSUMER_SECRET: '',
       TWITTER_ACCESS_TOKEN: '',
-      TWITTER_ACCESS_SECRET: ''
+      TWITTER_ACCESS_SECRET: '',
       MAX_TWITTER_ID: 0
     });
 

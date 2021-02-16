@@ -73,7 +73,7 @@ function pullPostsFromTumblr() {
         var parsed = parseDate(post.title);
         
         // Try to get 'April 2016' posts, too, if their post.date matches the current date.
-        // In that case, the post.date is parsed.
+        // In that case, the post.date is parsed. This ensures that an 'April 2016' can only be posted on one given day in April.
         if (parsed == 'No Match') {
           var parsedMonth = parseMonthDate(post.title);
           
@@ -94,7 +94,7 @@ function pullPostsFromTumblr() {
           // Check match against previous posts.
           if (previousURLs.indexOf(post.short_url) != -1) {
             
-            var subject = 'TestCode previous post from ' + queryDateString;
+            var subject = 'Previous post from ' + queryDateString;
             MailApp.sendEmail('virtualista67@gmail.com', subject, post.title + " "  + extractHeadline(post) + " " + post.short_url);
           
           } else {
